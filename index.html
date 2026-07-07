@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape-R</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0f3460;
+            border: 1px solid #1a4a7a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '\25BC';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+            pointer-events: none;
+            font-size: 0.7rem;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #1a4a7a;
+            background: #0f3460;
+            color: #aaa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .mode-btn.active {
+            border-color: #e94560;
+            background: #e94560;
+            color: #fff;
+        }
+
+        .mode-btn:hover:not(.active) {
+            border-color: #e94560;
+            color: #fff;
+        }
+
+        .mode-info {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .barcode-output {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .barcode-output svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .code-display {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #0f3460;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 0.15em;
+            color: #fff;
+        }
+
+        .code-breakdown {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-top: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+
+        .code-part {
+            padding: 0.25rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .code-part.prefix {
+            background: #1b4332;
+            color: #95d5b2;
+        }
+
+        .code-part.kasse {
+            background: #3a1078;
+            color: #c8b6ff;
+        }
+
+        .code-part.timestamp {
+            background: #7b2d26;
+            color: #f4a261;
+        }
+
+        .code-labels {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-top: 0.25rem;
+            font-size: 0.65rem;
+            color: #888;
+        }
+
+        .code-labels span {
+            padding: 0 0.4rem;
+        }
+
+        .btn-generate {
+            width: 100%;
+            padding: 1rem;
+            background: #e94560;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-generate:hover {
+            background: #c23152;
+        }
+
+        .btn-generate:active {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+            .container {
+                padding: 1.5rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Escape-R</h1>
+    <p class="subtitle">REWE Barcode Generator</p>
+
+    <div class="container">
+        <div class="form-group">
+            <label>Kassennummer</label>
+            <div class="select-wrapper">
+                <select id="kassenNr">
+                    <script>
+                        for (let i = 1; i <= 20; i++) {
+                            document.write(`<option value="${i}"${i === 1 ? ' selected' : ''}>Kasse ${String(i).padStart(2, '0')}</option>`);
+                        }
+                    </script>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Modus</label>
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="current" onclick="setMode('current')">
+                    Aktuell
+                </button>
+                <button class="mode-btn" data-mode="universal" onclick="setMode('universal')">
+                    Universal
+                </button>
+            </div>
+            <div class="mode-info" id="modeInfo">Verwendet aktuelle Uhrzeit als Timestamp</div>
+        </div>
+
+        <button class="btn-generate" onclick="generate()">Barcode generieren</button>
+
+        <div class="barcode-output">
+            <svg id="barcode"></svg>
+        </div>
+
+        <div class="code-display" id="codeDisplay">-</div>
+
+        <div class="code-breakdown" id="codeBreakdown"></div>
+        <div class="code-labels" id="codeLabels"></div>
+    </div>
+
+    <script>
+        let mode = 'current';
+
+        function setMode(m) {
+            mode = m;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === m);
+            });
+            const info = document.getElementById('modeInfo');
+            if (m === 'current') {
+                info.textContent = 'Verwendet aktuelle Uhrzeit als Timestamp';
+            } else {
+                info.textContent = 'Timestamp 2147483647 — gültig bis 19.01.2038';
+            }
+        }
+
+        function buildCode() {
+            const prefix = '2300';
+            const kasse = String(document.getElementById('kassenNr').value).padStart(2, '0');
+            let timestamp;
+            if (mode === 'universal') {
+                timestamp = '2147483647';
+            } else {
+                timestamp = String(Math.floor(Date.now() / 1000)).padStart(10, '0');
+            }
+            return { prefix, kasse, timestamp, full: prefix + kasse + timestamp };
+        }
+
+        function generate() {
+            const code = buildCode();
+
+            JsBarcode('#barcode', code.full, {
+                format: 'ITF',
+                width: 2,
+                height: 80,
+                displayValue: true,
+                fontSize: 16,
+                font: 'monospace',
+                textMargin: 8,
+                margin: 10,
+                background: '#ffffff',
+                lineColor: '#000000'
+            });
+
+            document.getElementById('codeDisplay').textContent = code.full;
+
+            document.getElementById('codeBreakdown').innerHTML =
+                `<span class="code-part prefix">${code.prefix}</span>` +
+                `<span class="code-part kasse">${code.kasse}</span>` +
+                `<span class="code-part timestamp">${code.timestamp}</span>`;
+
+            document.getElementById('codeLabels').innerHTML =
+                `<span>Präfix</span><span>Kasse</span><span>Timestamp</span>`;
+        }
+
+        // Generate on load
+        generate();
+    </script>
+</body>
+</html>
